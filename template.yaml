@@ -1,15 +1,30 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   mysql-sam-nodejs-example
 
   Sample SAM Template for mysql-sam-nodejs-example
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
+    CodeUri: app/
     Timeout: 3
     MemorySize: 128
+    Runtime: nodejs20.x
+    Architectures:
+      - x86_64
+    VpcConfig:
+      SecurityGroupIds:
+        - sg-c8c5c9a3
+      # Should we read subnet ids from aws secret manager?
+      SubnetIds:
+        - subnet-09a0c761
+        - subnet-d94d91a3
+        - subnet-cc828e81
+    Environment:
+      Variables:
+        DB_CREDENTIALS_SECRET_NAME: nodejs-example/mysql
+        LOG_LEVEL: INFO
 
     Tracing: Active
     # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
@@ -19,22 +34,19 @@ Globals:
     TracingEnabled: true
 Resources:
   AddBookFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
-      CodeUri: app/
       Handler: functions/books.addBookHandler
-      Runtime: nodejs20.x
-      Architectures:
-      - x86_64
-      Tracing: Active
-      Environment:
-        Variables:
-          POWERTOOLS_SERVICE_NAME: helloWorld
-          POWERTOOLS_METRICS_NAMESPACE: mysql-sam-nodejs-example
-          LOG_LEVEL: INFO
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:nodejs-example/mysql*
       Events:
         AddBook:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api
           Properties:
             Path: /books
             Method: post
@@ -45,7 +57,57 @@ Resources:
         Target: es2020
         # Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
         EntryPoints:
-        - functions/books.ts
+          - functions/books.ts
+  GetBookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: functions/books.getBookHandler
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:nodejs-example/mysql*
+      Events:
+        AddBook:
+          Type: Api
+          Properties:
+            Path: /books/{id}
+            Method: get
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        # Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - functions/books.ts
+  DeleteBookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: functions/books.deleteBookHandler
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:nodejs-example/mysql*
+      Events:
+        AddBook:
+          Type: Api
+          Properties:
+            Path: /books/{id}
+            Method: delete
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        # Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
+        EntryPoints:
+          - functions/books.ts
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -59,7 +121,7 @@ Resources:
     Properties:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
-      AutoConfigurationEnabled: 'true'
+      AutoConfigurationEnabled: "true"
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
