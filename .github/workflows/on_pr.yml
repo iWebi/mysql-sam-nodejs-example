@@ -1,0 +1,21 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/setup-sam@v2      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+      - name: Install
+        run: npm install
+        working-directory: ./app
+      - name: run unit tests
+        run: npm run test
+        working-directory: ./app
+      - name: validate sam templte
+        run: sam validate
