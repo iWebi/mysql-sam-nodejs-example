@@ -1,10 +1,10 @@
 {
-  "name": "hello_world",
+  "name": "mysql-sam-nodejs-example",
   "version": "1.0.0",
-  "description": "hello world sample for NodeJS",
+  "description": "Example CRUD api with Typescript/MySQL/AWS SAM",
   "main": "app.js",
-  "repository": "https://github.com/aws/aws-sam-cli-app-templates/tree/master/nodejs20.x/hello-ts-pt",
-  "author": "SAM CLI",
+  "repository": "https://github.com/iWebi/mysql-sam-nodejs-example",
+  "author": "Suman Jakkula",
   "license": "MIT",
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.0.3",
